@@ -1,29 +1,31 @@
-require("dotenv").config();
-const { json } = require("express");
-const express = require("express");
-const mongoose = require("mongoose");
+const express=require("express");
+const app=express();
+app.use(express.json()); // to get body data
+require("dotenv").config();//to use port number
+const mongoose=require('mongoose');// to connect db
+mongoose.connect(`mongodb://localhost:27017/${process.env.DB_NAME}`);// to connect with db
+const fileUpload = require('express-fileupload'); ///to upload file
+app.use(fileUpload());// to upload images
+const {saveFile}=require("./utils/gallery");
+const path=require('path'); // to image on browser
 
-mongoose.connect(`mongodb://localhost:27017/${process.env.DB_NAME}`);
 
-const app = express();
-app.use(express.json());
+//for image upload
+app.post("/gallery", saveFile, (req,res,next)=>{
+res.status(200).json({msg:"file Upload", filename:req.body.image});
+}) 
+app.use('/upload',express.static(path.join(__dirname,'upload')));
 
-const userRoute = require("./routes/user");
-const postRouter = require("./routes/post");
 
-app.use("/users", userRoute);
-app.use("/post", postRouter);
+const catRoute=require('./route/catRoute');
+app.use('/cat',catRoute);
 
-//error handling
-app.use((err, req, res, next) => {
-  err.status = err.status || 200;
-  res.status(err.status).json({
-    con: false,
-    msg: err.message,
-  });
-});
+const userRoute=require("./route/userRoute");
+app.use('/user',userRoute);
 
-app.listen(
-  process.env.PORT,
-  console.log(`Server is running at port ${process.env.PORT}`)
-);
+const postRouter=require("./route/postRoute");
+const { response } = require("express");
+
+app.use('/post',postRouter);
+
+app.listen(process.env.PORT,console.log(`sever is running at port ${process.env.PORT}`));
